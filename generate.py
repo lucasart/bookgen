@@ -1,5 +1,7 @@
 #!/usr/bin/python3
-{'You need Python 2.7+ or Python 3.1+'}
+
+from __future__ import print_function  # Python 2.7 compatibility
+{'You need Python 2.7+ or Python 3.1+'}  # Syntax error on earlier versions
 
 import sys
 import subprocess
@@ -8,9 +10,9 @@ import chess
 # Configure here
 Chess960 = True
 Engine = '../Stockfish/master'
-Options = {'Hash': 16, 'Threads': 7}
+Options = {'Hash': 64, 'Threads': 7}
 Cutoff = 50  # expressed in cp
-TimeControl = {'depth': 12, 'nodes': None, 'movetime': 1000}
+TimeControl = {'depth': 13, 'nodes': None, 'movetime': 1000}
 
 class UCIEngine():
     def __init__(self, engine):
@@ -79,22 +81,24 @@ class UCIEngine():
 if __name__ == '__main__':
     uciEngine = UCIEngine(Engine)
     uciEngine.setoptions(Options)
-    uciEngine.newgame()
 
-    for line in sys.stdin:
-        fen = line.rstrip().split(';')[0]
-        board = chess.Board(fen, Chess960)
+    with open(sys.argv[1], 'r') as inFile, open(sys.argv[2], 'w') as outFile:
+        for line in inFile:
+            fen = line.rstrip().split(';')[0]
+            board = chess.Board(fen, Chess960)
+            uciEngine.newgame()
+            print('processing:', fen)
 
-        for move in board.legal_moves:
-            board.push(move)
-            childFen = board.shredder_fen() if Chess960 else board.fen()
-            board.pop()
+            for move in board.legal_moves:
+                board.push(move)
+                childFen = board.shredder_fen() if Chess960 else board.fen()
+                board.pop()
 
-            uciEngine.writeline('position fen ' + childFen)
-            uciEngine.isready()
-            bestmove, score = uciEngine.go(TimeControl)
+                uciEngine.writeline('position fen ' + childFen)
+                uciEngine.isready()
+                bestmove, score = uciEngine.go(TimeControl)
 
-            if abs(score) < Cutoff:
-                print(fen)
+                if abs(score) < Cutoff:
+                    print(childFen, file=outFile)
 
     uciEngine.quit()
