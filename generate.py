@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import math
 import random
 import subprocess
 import sys
@@ -11,7 +12,7 @@ Chess960 = True
 Engine = '../Stockfish/master'
 Options = {'Hash': 64, 'Threads': 7}
 Pruning = {'score': 50, 'random': 0.5}
-TimeControl = {'depth': 13, 'nodes': None, 'movetime': 1000}
+TimeControl = {'depth': 14, 'nodes': None, 'movetime': 1000}
 
 
 class UCIEngine():
@@ -81,18 +82,20 @@ class UCIEngine():
 if __name__ == '__main__':
     uciEngine = UCIEngine(Engine)
     uciEngine.setoptions(Options)
+    uciEngine.setoptions({'UCI_Chess960': Chess960})
 
     with open(sys.argv[1], 'r') as inFile, open(sys.argv[2], 'w') as outFile:
         for line in inFile:
             fen = line.rstrip().split(';')[0]
             board = chess.Board(fen, Chess960)
             uciEngine.newgame()
-            print('processing:', fen)
+            print(fen)
 
             for move in board.legal_moves:
                 if random.random() < Pruning['random']:
                     continue
 
+                print(' ->', move)
                 board.push(move)
                 childFen = board.shredder_fen() if Chess960 else board.fen()
                 board.pop()
